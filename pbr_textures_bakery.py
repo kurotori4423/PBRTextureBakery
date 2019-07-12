@@ -139,7 +139,6 @@ class PBR_CreateTextrue(bpy.types.Operator):
             return False
         
         matOutput = nodes['Material Output']
-        matOutputNodeList = []
 
         result = True
         for node in matOutput.inputs['Surface'].links:
@@ -197,7 +196,6 @@ class PBR_CreateTextrue(bpy.types.Operator):
 
         for node in matOutput.inputs['Surface'].links:
             matOutputNodeList.append({'From_Node' : node.from_node, 'From_Socket' : node.from_socket})
-            mix_flag = ( node.from_node.type == 'MIX_SHADER' )
         
         renderNodes = [] # {Emis , BSDF}
 
