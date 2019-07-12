@@ -44,8 +44,6 @@ class BakePanel(bpy.types.Panel):
         obj = context.object
         row = layout.row()
         row.label(text="Active Object is: " + obj.name)
-        row = layout.row()
-        row.prop(obj, "name")
 
         row = layout.row()
         row.prop(context.scene, "bakery_filename")
@@ -80,6 +78,11 @@ class PBR_CreateTextrue(bpy.types.Operator):
     
     def execute(self, context):
         ao = context.active_object
+
+        # マテリアルが正しいかどうかチェック
+        for mat in ao.data.materials:
+            if not self.CheckMaterial(mat):
+                return {'FINISHED'}
 
         context.scene.render.engine = 'CYCLES'
 
@@ -127,6 +130,55 @@ class PBR_CreateTextrue(bpy.types.Operator):
         self.report({'INFO'}, img.name + " : Bake Complete!")
         return img
 
+    # 正しいPBRマテリアルかどうかチェック
+    def CheckMaterial(self, material):
+        nodes = material.node_tree.nodes
+        # マテリアルアウトプットが存在するかどうか
+        if nodes.find('Material Output') == -1:
+            self.report({'ERROR'}, 'Material Output is not found')
+            return False
+        
+        matOutput = nodes['Material Output']
+        matOutputNodeList = []
+
+        result = True
+        for node in matOutput.inputs['Surface'].links:
+            if node.from_node.type == 'MIX_SHADER':
+                result = self.CheckNextMixNode(node.from_node)
+            elif node.from_node.type == 'BSDF_PRINCIPLED':
+                result = True and result
+            else:
+                result = False and result
+        
+        if not result:
+            self.report({'ERROR'}, 'Material has incorrect Shader node')
+            return False
+
+        return True
+
+    def CheckNextMixNode(self, mixnode):
+        result = True
+        for node in mixnode.inputs[1].links:
+            print(node.from_node.name)
+            if node.from_node.type == 'MIX_SHADER':
+                result = self.CheckNextMixNode(node.from_node)
+            elif node.from_node.type == 'BSDF_PRINCIPLED':
+                result = True and result
+            else:
+                result = False and result
+                print("find")
+        
+        for node in mixnode.inputs[2].links:
+            print(node.from_node.name)
+            if node.from_node.type == 'MIX_SHADER':
+                result = self.CheckNextMixNode(node.from_node)
+            elif node.from_node.type == 'BSDF_PRINCIPLED':
+                result = True and result
+            else:
+                result = False and result
+                print("find")
+        
+        return result
 
     def BakeTexture(self, filename, activeObject, mapType, resolution):
         mat = activeObject.data.materials[0]
