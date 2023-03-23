@@ -150,7 +150,7 @@ class PBR_CreateTextrue(bpy.types.Operator):
     def execute(self, context):
         ao = context.active_object
 
-        if not ao.select:
+        if not ao.select_get():
             self.report({'ERROR'}, 'Bakeing objects are not select')
             return {'FINISHED'}
 
